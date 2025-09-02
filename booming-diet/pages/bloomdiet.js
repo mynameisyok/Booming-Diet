@@ -185,11 +185,11 @@ export default function BloomDietPage() {
                 <div className={styles.pred}>
                   ✅ <b>คำแนะนำ:</b> {String(prediction)}
                 </div>
-                {probabilities && (
+                {/* {probabilities && (
                   <pre className={styles.pre}>
-{JSON.stringify(probabilities, null, 2)}
+                        {JSON.stringify(probabilities, null, 2)}
                   </pre>
-                )}
+                )} */}
               </>
             )}
           </div>
