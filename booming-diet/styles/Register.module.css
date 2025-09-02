@@ -1,0 +1,151 @@
+/* styles/Register.module.css */
+/* ไม่มี selector แบบ global เช่น :root, body, a, label, input ฯลฯ */
+
+/* Topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: saturate(1.4) blur(6px);
+  border-bottom: 1px solid #f3e1ea;
+}
+
+.containerTop {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back {
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+.brand svg { margin-right: 8px; }
+.brand span {
+  font-weight: 800;
+  color: var(--pink);
+}
+
+/* Layout */
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 20px;
+}
+
+.h1 {
+  font-size: 42px;
+  margin: 28px 0 8px;
+}
+
+.card {
+  background: #fbfbfb;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+/* Lists */
+.bullets {
+  margin: 0 0 18px 0;
+  padding-left: 18px;
+}
+.bullets li { margin: 6px 0; }
+
+/* Form (ใช้ class แทน global selectors) */
+.formLabel {
+  display: block;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  background: #fff;
+}
+
+.formTextarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  background: #fff;
+}
+
+.formSelect {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  background: #fff;
+}
+
+/* Grid rows */
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.two   { grid-template-columns: 1fr 1fr; }
+.three { grid-template-columns: 1fr 1fr 1fr; }
+
+@media (max-width: 720px) {
+  .two, .three { grid-template-columns: 1fr; }
+}
+
+/* Text helpers */
+.muted { color: #6b7280; font-size: 13px; }
+.center { text-align: center; }
+
+/* Buttons & alerts */
+.btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btnPrimary { background: var(--pink); color: #fff; }
+
+.alert {
+  margin-top: 14px;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 12px;
+}
+.ok {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+/* Footer */
+.footer {
+  color: #94a3b8;
+  font-size: 12px;
+  margin: 18px 0;
+  text-align: center;
+}

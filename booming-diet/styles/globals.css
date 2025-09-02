@@ -4,3 +4,19 @@
   --border: #f5c1d8;
 }
 *, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: linear-gradient(#fdfafb, #ffffff);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #111;
+}
+
+/* ลิงก์แบบ global */
+a {
+  color: var(--pink);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
