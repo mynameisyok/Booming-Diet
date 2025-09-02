@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Head from "next/head";
 import styles from "@/styles/BloomDiet.module.css";
 
@@ -12,10 +12,17 @@ export default function BloomDietPage() {
   const [disease, setDisease] = useState("None");
   const [allergies, setAllergies] = useState("None");
   const [exerciseHours, setExerciseHours] = useState("");
+
   const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);      // string หรือ object ก็ได้
-  const [probabilities, setProbabilities] = useState(null); // object
+  const [prediction, setPrediction] = useState(null);
   const [error, setError] = useState("");
+
+  // refs สำหรับเด้งไปช่องที่ผิด/ว่าง
+  const genderRef = useRef(null);
+  const ageRef = useRef(null);
+  const heightRef = useRef(null);
+  const weightRef = useRef(null);
+  const exerciseRef = useRef(null); // ⬅️ เพิ่ม ref
 
   const yearNow = new Date().getFullYear();
 
@@ -27,14 +34,50 @@ export default function BloomDietPage() {
     return Number(bmi.toFixed(2));
   };
 
+  // helper: focus + scroll + ใช้ native validity tooltip
+  const jumpTo = (ref, msg) => {
+    const el = ref?.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.focus({ preventScroll: true });
+    if (el.setCustomValidity) {
+      el.setCustomValidity(msg);
+      el.reportValidity();
+      setTimeout(() => el.setCustomValidity(""), 2000);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
     setPrediction(null);
-    setProbabilities(null);
 
-    const bmi = calcBMI(height, weight);
+    // ✅ ตรวจทีละช่อง แล้วเด้งไปช่องแรกที่ไม่ผ่าน
+    if (!gender) return jumpTo(genderRef, "โปรดเลือกเพศ");
+
+    const ageNum = Number(age);
+    if (!age) return jumpTo(ageRef, "กรอกอายุ");
+    if (Number.isNaN(ageNum) || ageNum < 1 || ageNum > 120)
+      return jumpTo(ageRef, "อายุต้องอยู่ระหว่าง 1–120 ปี");
+
+    const heightNum = Number(height);
+    if (!height) return jumpTo(heightRef, "กรอกส่วนสูง");
+    // if (Number.isNaN(heightNum) || heightNum < 100 || heightNum > 250)
+    //   return jumpTo(heightRef, "ส่วนสูงต้องอยู่ระหว่าง 100–250 ซม.");
+
+    const weightNum = Number(weight);
+    if (!weight) return jumpTo(weightRef, "กรอกน้ำหนัก");
+    // if (Number.isNaN(weightNum) || weightNum < 20 || weightNum > 300)
+    //   return jumpTo(weightRef, "น้ำหนักต้องอยู่ระหว่าง 20–300 กก.");
+
+    // ⬇️ บังคับช่องชั่วโมงออกกำลังกาย
+    const exNum = Number(exerciseHours);
+    if (exerciseHours === "") return jumpTo(exerciseRef, "กรอกชั่วโมงออกกำลังกายต่อสัปดาห์");
+    // if (Number.isNaN(exNum) || exNum < 0 || exNum > 50)
+    //   return jumpTo(exerciseRef, "ชั่วโมงออกกำลังกายต้องอยู่ระหว่าง 0–50 ชั่วโมง");
+
+    setLoading(true);
+    const bmi = calcBMI(heightNum, weightNum);
 
     try {
       const res = await fetch("/api/predict-one", {
@@ -43,22 +86,23 @@ export default function BloomDietPage() {
         body: JSON.stringify({
           data: {
             gender,
-            age: Number(age) || null,
-            height_cm: Number(height) || null,
-            weight_kg: Number(weight) || null,
+            age: ageNum,
+            height_cm: heightNum,
+            weight_kg: weightNum,
             bmi,
             disease,
             allergies,
-            exercise_hours: Number(exerciseHours) || 0,
+            exercise_hours: exNum, // ⬅️ ใช้ค่าที่ตรวจแล้ว
           },
         }),
       });
 
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(`HTTP ${res.status} ${msg}`);
+      }
       const json = await res.json();
-
-      setPrediction(json.prediction ?? "—");
-      setProbabilities(json.probabilities ?? null);
+      setPrediction(json?.prediction ?? "—");
     } catch (err) {
       setError(`Failed to fetch: ${err.message}`);
     } finally {
@@ -70,7 +114,6 @@ export default function BloomDietPage() {
     <>
       <Head>
         <title>BloomDiet – แบบฟอร์มสุขภาพ & AI เมนูอาหาร</title>
-        {/* โหลดฟอนต์ Prompt (ถ้าไม่ต้องการ ลบบรรทัดนี้ได้) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -84,10 +127,11 @@ export default function BloomDietPage() {
           <h1 className={styles.title}>🌸 BloomDiet</h1>
           <p className={styles.subtitle}>กรอกข้อมูลสุขภาพของคุณเพื่อรับคำแนะนำเมนูอาหารจาก AI</p>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             {/* เพศ */}
             <label className={styles.label}>เพศ</label>
             <select
+              ref={genderRef}
               className={styles.select}
               value={gender}
               onChange={(e) => setGender(e.target.value)}
@@ -100,6 +144,7 @@ export default function BloomDietPage() {
             {/* อายุ */}
             <label className={styles.label}>อายุ (ปี)</label>
             <input
+              ref={ageRef}
               type="number"
               min="1"
               max="120"
@@ -111,6 +156,7 @@ export default function BloomDietPage() {
             {/* ส่วนสูง */}
             <label className={styles.label}>ส่วนสูง (ซม.)</label>
             <input
+              ref={heightRef}
               type="number"
               min="100"
               max="250"
@@ -122,6 +168,7 @@ export default function BloomDietPage() {
             {/* น้ำหนัก */}
             <label className={styles.label}>น้ำหนัก (กก.)</label>
             <input
+              ref={weightRef}
               type="number"
               min="20"
               max="300"
@@ -162,6 +209,7 @@ export default function BloomDietPage() {
             {/* ชั่วโมงออกกำลังกาย */}
             <label className={styles.label}>ชั่วโมงออกกำลังกายต่อสัปดาห์</label>
             <input
+              ref={exerciseRef}
               type="number"
               step="0.5"
               min="0"
@@ -176,21 +224,12 @@ export default function BloomDietPage() {
             </button>
           </form>
 
-          {/* แสดงผล */}
           <div className={styles.result}>
             {error && <div className={styles.error}>❌ {error}</div>}
-
             {!error && prediction && (
-              <>
-                <div className={styles.pred}>
-                  ✅ <b>คำแนะนำ:</b> {String(prediction)}
-                </div>
-                {/* {probabilities && (
-                  <pre className={styles.pre}>
-                        {JSON.stringify(probabilities, null, 2)}
-                  </pre>
-                )} */}
-              </>
+              <div className={styles.pred}>
+                ✅ <b>คำแนะนำ:</b> {String(prediction)}
+              </div>
             )}
           </div>
 

@@ -56,42 +56,46 @@ def predict_one(payload: PredictOneIn):
     try:
         d = payload.data or {}
 
-        # สร้าง DataFrame ตามคอลัมน์ที่คาดหวัง (ถ้ารู้)
+        # ---- ตรวจสอบฟิลด์บังคับ ----
+        required = ["gender", "age", "height_cm", "weight_kg"]
+        missing = [k for k in required if not d.get(k)]
+        if missing:
+            raise HTTPException(status_code=422, detail=f"missing required fields: {', '.join(missing)}")
+
+        # คำนวณ BMI ถ้าไม่ส่งมา
+        if (d.get("bmi") is None) and d.get("height_cm") and d.get("weight_kg"):
+            h = float(d["height_cm"]) / 100.0
+            w = float(d["weight_kg"])
+            d["bmi"] = round(w / (h*h), 2)
+
+        # --- สร้าง DataFrame ตามคอลัมน์คาดหวังเหมือนเดิม ---
         if expected_cols:
             df = pd.DataFrame([d]).reindex(columns=expected_cols)
         else:
             df = pd.DataFrame([d])
 
-        # ---- ทำให้ทนกับ data ว่าง/ชนิดผิด ----
-        # บังคับชนิดตัวเลข + เติม NaN เป็น 0 เพื่อกัน StandardScaler พัง
+        # (จะยังคง fill ค่าว่างเฉพาะฟิลด์ "ไม่บังคับ")
         for c in num_cols:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         if num_cols:
             df[num_cols] = df[num_cols].fillna(0)
 
-        # หมวดหมู่: แปลงเป็น string + เติมค่าว่าง
         for c in cat_cols:
             if c in df.columns:
                 df[c] = df[c].astype(str)
         if cat_cols:
             df[cat_cols] = df[cat_cols].fillna("")
 
-        # ทำนาย
+        # ---- ทำนาย ----
         pred_num = inference_model.predict(df)[0]
         label = le.inverse_transform([pred_num])[0]
         proba = inference_model.predict_proba(df)[0]
         probs = {cls: float(p) for cls, p in zip(le.classes_, proba)}
         return {"prediction": label, "probabilities": probs}
 
+    except HTTPException:
+        raise
     except Exception as e:
-        # ช่วยดีบักในคอนโซล
-        try:
-            print("[DEBUG] incoming keys:", sorted(list((payload.data or {}).keys())))
-            print("[DEBUG] expected_columns:", expected_cols)
-            print("[DEBUG] cat_cols:", cat_cols)
-            print("[DEBUG] num_cols:", num_cols)
-            print("[DEBUG] df head:\n", df.head())
-        except Exception:
-            pass
         raise HTTPException(status_code=400, detail=str(e))
+
