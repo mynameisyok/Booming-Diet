@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>BloomDiet – แบบฟอร์มสุขภาพ & AI เมนูอาหาร</title>
+  <style>
+    body {
+      font-family: "Prompt", sans-serif;
+      background-color: #fdfafb;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 { color: #e91e63; text-align: center; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select {
+      width: 100%; padding: 8px; margin-top: 5px;
+      border: 1px solid #ddd; border-radius: 8px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #e91e63;
+      color: #fff; border: none;
+      border-radius: 25px;
+      font-size: 16px; cursor: pointer;
+    }
+    button:hover { background: #d81b60; }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fce4ec;
+    }
+    .error { color: #e53935; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌸 BloomDiet</h1>
+    <p>กรอกข้อมูลสุขภาพของคุณเพื่อรับคำแนะนำเมนูอาหารจาก AI</p>
+
+    <label>เพศ</label>
+    <select id="gender">
+      <option value="">-- เลือก --</option>
+      <option value="Male">ชาย</option>
+      <option value="Female">หญิง</option>
+    </select>
+
+    <label>อายุ (ปี)</label>
+    <input type="number" id="age" min="1" max="120" />
+
+    <label>ส่วนสูง (ซม.)</label>
+    <input type="number" id="height" min="100" max="250" />
+
+    <label>น้ำหนัก (กก.)</label>
+    <input type="number" id="weight" min="20" max="300" />
+
+    <label>โรคประจำตัว</label>
+    <select id="disease">
+      <option value="None">ไม่มี</option>
+      <option value="Diabetes">เบาหวาน</option>
+      <option value="Hypertension">ความดันโลหิตสูง</option>
+      <option value="Heart">โรคหัวใจ</option>
+      <option value="Obesity">โรคอ้วน</option>
+    </select>
+
+    <label>การแพ้อาหาร</label>
+    <select id="allergies">
+      <option value="None">ไม่มี</option>
+      <option value="Gluten">Gluten</option>
+      <option value="Dairy">นม</option>
+      <option value="Nuts">ถั่ว</option>
+      <option value="Seafood">อาหารทะเล</option>
+      <option value="Eggs">ไข่</option>
+    </select>
+
+    <label>ชั่วโมงออกกำลังกายต่อสัปดาห์</label>
+    <input type="number" id="exerciseHours" step="0.5" min="0" max="50" />
+
+    <button onclick="submitToAPI()">ขอคำแนะนำเมนูด้วย AI 🍽️</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    function formData() {
+      const gender = document.getElementById("gender").value;
+      const age = Number(document.getElementById("age").value);
+      const height = Number(document.getElementById("height").value);
+      const weight = Number(document.getElementById("weight").value);
+      const disease = document.getElementById("disease").value;
+      const allergies = document.getElementById("allergies").value;
+      const exercise_hours = Number(document.getElementById("exerciseHours").value);
+
+      let bmi = null;
+      if (height && weight) {
+        bmi = +(weight / ((height/100)**2)).toFixed(2);
+      }
+      return { gender, age, height_cm: height, weight_kg: weight, bmi, disease, allergies, exercise_hours };
+    }
+
+    async function submitToAPI() {
+      const resultEl = document.getElementById("result");
+      resultEl.innerHTML = "⏳ กำลังทำนาย...";
+      try {
+        const res = await fetch("/api/predict-one", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: formData() })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
+        resultEl.innerHTML = `
+          ✅ <b>คำแนะนำ:</b> ${json.prediction}<br/>
+          <small>ความน่าจะเป็น:</small>
+          <pre>${JSON.stringify(json.probabilities, null, 2)}</pre>
+        `;
+      } catch (err) {
+        resultEl.innerHTML = `<span class="error">❌ Failed to fetch: ${err.message}</span>`;
+      }
+    }
+  </script>
+</body>
+</html>
+
+

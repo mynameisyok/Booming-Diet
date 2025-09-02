@@ -1,0 +1,6 @@
+/* styles/globals.css */
+:root {
+  --pink: #e866a5;
+  --border: #f5c1d8;
+}
+*, *::before, *::after { box-sizing: border-box; }
